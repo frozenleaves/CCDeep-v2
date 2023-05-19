@@ -2,14 +2,16 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 
-file_ccdeep = r'E:\paper\evaluate_data\evaluation_for_segmentation\measure\CCDeep_segmentation\Classic_Measures.csv'
-file_deepcell = r'E:\paper\evaluate_data\evaluation_for_segmentation\measure\deepcell_segmentation\Classic_Measures.csv'
-file_cellpose = r'E:\paper\evaluate_data\evaluation_for_segmentation\measure\cellpose_segmentation\Classic_Measures.csv'
+file_ccdeep = r'G:\paper\evaluate_data\evaluation_for_segmentation\measure\CCDeep_segmentation\Classic_Measures.csv'
+file_deepcell = r'G:\paper\evaluate_data\evaluation_for_segmentation\measure\deepcell_segmentation\Classic_Measures.csv'
+file_cellpose = r'G:\paper\evaluate_data\evaluation_for_segmentation\measure\cellpose_segmentation\Classic_Measures.csv'
 
-tmp = r'E:\paper\evaluate_data\evaluation_for_segmentation\measure\tmp'
+tmp = r'G:\paper\evaluate_data\evaluation_for_segmentation\measure\tmp'
 
 import matplotlib.pyplot as plt
+
 plt.rcParams['font.family'] = 'Times New Roman'
+
 
 def handle_data(file_list, key=None):
     data_list = []
@@ -61,7 +63,7 @@ def draw(df):
 
 def confusion_matrix(TP, FP, TN, FN, title='Confusion Matrix', filename=None):
     # 组织数据为numpy数组
-    plt.figure(figsize=(2000,2000), dpi=600)
+    plt.figure(figsize=(2000, 2000), dpi=600)
     confusion_matrix = np.array([[TP, FN], [FP, TN]])
     conf_mat_percent = confusion_matrix.astype('float') / confusion_matrix.sum(axis=1)[:, np.newaxis]
     conf_mat_percent = np.round(conf_mat_percent, decimals=4)
@@ -83,14 +85,16 @@ def confusion_matrix(TP, FP, TN, FN, title='Confusion Matrix', filename=None):
         name = filename
     else:
         name = title
-    plt.savefig(r'E:\paper\evaluate_data\evaluation_for_segmentation\figures' + '\\' + name + '.pdf')
+    plt.savefig(r'G:\paper\evaluate_data\evaluation_for_segmentation\figures' + '\\' + name + '.pdf')
     # plt.show()
+
 
 def get_matrix(TP, FP, TN, FN):
     confusion_matrix = np.array([[TP, FN], [FP, TN]])
     conf_mat_percent = confusion_matrix.astype('float') / confusion_matrix.sum(axis=1)[:, np.newaxis]
     conf_mat_percent = np.round(conf_mat_percent, decimals=4)
     return conf_mat_percent
+
 
 def draw_sub_heatmap(ccdeep, cellpose, deepcell):
     fig, axs = plt.subplots(1, 3, figsize=(15, 5), dpi=600)
@@ -99,12 +103,16 @@ def draw_sub_heatmap(ccdeep, cellpose, deepcell):
     cm_deepcell = get_matrix(*deepcell)
     # 在每个子图中绘制热力图
     categories = ['P', 'N']
-    sns.heatmap(cm_ccdeep,annot=True, fmt='g', xticklabels=categories, yticklabels=categories, cmap='Blues', ax=axs[0], cbar=False)
-    sns.heatmap(cm_cellpose, annot=True, fmt='g', xticklabels=categories, yticklabels=categories, cmap='Blues', ax=axs[1], cbar=False)
-    sns.heatmap(cm_deepcell,annot=True, fmt='g', xticklabels=categories, yticklabels=categories, cmap='Blues', ax=axs[2])
+    fontsize=20
+    sns.heatmap(cm_ccdeep, annot=True, fmt='g', xticklabels=categories, yticklabels=categories, cmap='Blues', ax=axs[0],
+                cbar=False, annot_kws={"size": fontsize})
+    sns.heatmap(cm_cellpose, annot=True, fmt='g', xticklabels=categories, yticklabels=categories, cmap='Blues',
+                ax=axs[1], cbar=False, annot_kws={"size": fontsize})
+    sns.heatmap(cm_deepcell, annot=True, fmt='g', xticklabels=categories, yticklabels=categories, cmap='Blues',
+                ax=axs[2], annot_kws={"size": fontsize})
     for ax in axs:
-        ax.tick_params(axis='x', which='both', length=0)
-        ax.tick_params(axis='y', which='both', length=0)
+        ax.tick_params(axis='x', which='both', length=0, labelsize=fontsize)
+        ax.tick_params(axis='y', which='both', length=0, labelsize=fontsize)
 
     axs[0].set_xticks([], minor=True)
     axs[0].set_yticks([], minor=True)
@@ -112,14 +120,15 @@ def draw_sub_heatmap(ccdeep, cellpose, deepcell):
     axs[1].set_xticks([], minor=True)
     axs[1].set_yticks([], minor=True)
 
-    plt.savefig(r'E:\paper\evaluate_data\evaluation_for_segmentation\figures\confusion_matrix.pdf')
+    plt.savefig(r'G:\paper\evaluate_data\evaluation_for_segmentation\figures\confusion_matrix-new.pdf')
 
     plt.show()
 
+
 if __name__ == '__main__':
     ccdeep = (175545, 10588, 4002911, 5260)
-    cellpose = (156972,	16834,	3996665,	23833)
-    deepcell = (82833,	3922,	4009577,	97972)
+    cellpose = (156972, 16834, 3996665, 23833)
+    deepcell = (82833, 3922, 4009577, 97972)
     # confusion_matrix(175545, 10588, 4002911, 5260)
     # confusion_matrix(*ccdeep, 'CCDeep')
     # confusion_matrix(*cellpose, 'Cellpose')

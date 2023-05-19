@@ -405,6 +405,7 @@ class Cell(object):
         if key not in cls._instances:
             cls._instances[key] = super(Cell, cls).__new__(cls)
             cls._instances[key].__feature = None
+            cls._instances[key].sort_value = 0
             cls._instances[key].__feature_flag = False
             cls._instances[key].__track_id = None
             cls._instances[key].__branch_id = None
@@ -502,6 +503,22 @@ class Cell(object):
         y_min_expand = self.bbox[0] - mult * y_len
         y_max_expand = self.bbox[1] + mult * y_len
         return Rectangle(y_min_expand, y_max_expand, x_min_expand, x_max_expand)
+
+    @property
+    def r_long(self):
+        return max((self.bbox[3] - self.bbox[2]) / 2, (self.bbox[1] - self.bbox[0]) / 2)
+
+    @property
+    def r_short(self):
+        return min((self.bbox[3] - self.bbox[2]) / 2, (self.bbox[1] - self.bbox[0]) / 2)
+
+    @property
+    def d_long(self):
+        return 2 * self.r_long
+
+    @property
+    def d_short(self):
+        return 2 * self.r_short
 
     @staticmethod
     @lru_cache(maxsize=None)

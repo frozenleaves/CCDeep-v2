@@ -301,7 +301,6 @@ class FeatureExtractor(object):
             feature = self.extract(cell)
             cell.set_feature(feature)
             _cells.append(cell)
-        sorted(_cells)
         return _cells
 
     @property

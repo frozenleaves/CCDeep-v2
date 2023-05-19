@@ -4,6 +4,7 @@ import argparse
 import sys
 import logging
 import warnings
+import time
 
 import tensorflow as tf
 
@@ -89,6 +90,7 @@ elif args.ns and args.js:
 else:
     jsons = None
 
+start_time_ccdeep = time.time()
 
 if args.track:
     # from CCDeep import tracking
@@ -111,6 +113,8 @@ if args.track:
         track.start_track(fjson=jsons, fpcna=args.pcna, fbf=None, fout=track_output, track_range=xrange,
                           export_visualization=True, basename=os.path.basename(args.pcna).replace('.tif', ''))
 
+end_time_ccdeep = time.time()
+print(f'cost time: {end_time_ccdeep - start_time_ccdeep:.4f}')
 
 if args.trackpcna:
     from CCDeep.tracking_pcnadeep import track
