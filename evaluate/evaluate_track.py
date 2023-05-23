@@ -98,10 +98,11 @@ def evaluate(truth_df, predict_df, outfile=None):
 
 def run_evaluate(gap):
 
-    dirs = ['copy_of_1_xy01', 'copy_of_1_xy19', 'MCF10A_copy02', 'MCF10A_copy11', 'src06']
+    # dirs = ['copy_of_1_xy01', 'copy_of_1_xy19', 'MCF10A_copy02', 'MCF10A_copy11', 'src06']
+    dirs = ['MCF10A_copy02']
     base = r'G:\paper\evaluate_data'
     for i in dirs:
-        prediction_CCDeep = rf'G:\paper\evaluate_data\{gap*5}min\{i}_{gap*5}min\tracking_output\track.csv'
+        prediction_CCDeep = rf'G:\paper\evaluate_data\{gap*5}min\{i}_{gap*5}min\tracking_output.ok\track.csv'
         prediction_pcnadeep = rf'G:\paper\evaluate_data\{gap*5}min\{i}_{gap*5}min\track\refined-pcnadeep(CCDeep_format).csv'
         prediction_GT = rf"G:\paper\evaluate_data\{gap*5}min\{i}_{gap*5}min\{gap*5}-track-GT.csv"
         prediction_trackmeta = rf"G:\paper\evaluate_data\{gap*5}min\{i}_{gap*5}min\export.csv"
@@ -116,7 +117,9 @@ def run_evaluate(gap):
         pcnadeep_result = evaluate(*prepare_data(prediction_pcnadeep, prediction_GT))
         trackmeta_result = evaluate(*prepare_data(prediction_trackmeta, prediction_GT))
         result = pd.concat([ccdeep_result, pcnadeep_result, trackmeta_result])
-        result.to_csv(out, index=False)
+        result.index = ['CCDeep', 'pcnadeep', 'trackmeta']
+        print(result)
+        result.to_csv(out, index=True)
 
     # pred = rf'E:\paper\evaluate_data\{gap*5}min\copy_of_1_xy01_{gap*5}min\tracking_output\(new)track.csv'
     # pred2 = rf'E:\paper\evaluate_data\{gap*5}min\copy_of_1_xy01_{gap*5}min\track\refined-pcnadeep(CCDeep_format).csv'

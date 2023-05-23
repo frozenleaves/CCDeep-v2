@@ -142,4 +142,4 @@ if args.trackpcna:
         new_jsons = jsons
     logging.info(f"Tracking result will saved to {track_output}")
     logging.info('start tracking ...')
-    track.start_track(fjson=new_jsons, fpcna=pcna, fbf=bf, fout=track_output, image_width=1024, image_height=1024)
+    track.start_track(fjson=new_jsons, fpcna=pcna, fbf=bf, fout=track_output, image_width=2048, image_height=2048)

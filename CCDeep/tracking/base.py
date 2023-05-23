@@ -69,7 +69,7 @@ class TreeStatus(object):
             cls._instances[key].__tracking_tree = None
             cls._instances[key].__init_flag = False
             cls._instances[key].enter_mitosis_threshold = 50
-            cls._instances[key].division_windows_len = 10
+            cls._instances[key].division_windows_len = 20
             cls._instances[key].__exit_mitosis_time = cls._instances[key].enter_mitosis_threshold
             # 从完成分裂退出mitosis开始，计数，10帧之内不可以再进入mitosis，即当此值小于10的时候，self.__enter_mitosis 不可为True
         return cls._instances[key]
@@ -102,7 +102,7 @@ class TreeStatus(object):
         return False
 
     def reset_division_window(self):
-        self.division_windows_len = 10
+        self.division_windows_len = 20
 
     def sub_division_window(self):
         if self.division_windows_len > 0:
@@ -601,7 +601,8 @@ class Cell(object):
             else:
                 raise ValueError(f'status {status} is invalid!')
         else:
-            warnings.warn('cannot change the accurate track_id')
+            # warnings.warn('cannot change the accurate track_id')
+            pass
 
     def set_match_status(self, status: bool | str):
         self.__match_status = status

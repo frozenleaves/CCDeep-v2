@@ -361,9 +361,11 @@ class Match(object):
 
         # 计算两个多边形的交集
         try:
-            intersection = poly1.intersection(poly2)
-            # 计算两个多边形的并集
-            union = poly1.union(poly2)
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                intersection = poly1.intersection(poly2)
+                # 计算两个多边形的并集
+                union = poly1.union(poly2)
         except shapely.errors.GEOSException:
             return self.calcIoU_roughly(cell_1, cell_2)
         if union.area == 0:
@@ -598,9 +600,9 @@ class Matcher(object):
         else:
             if len(matched_cells_dict) == 2:
                 cells = list(matched_cells_dict.keys())
-                if max([i.area for i in
-                        list(matched_cells_dict.keys())]) > parent.area * area_size_t:  # 如果母细胞太小了，不认为会发生有丝分裂，转向单项判断
-                    raise MitosisError('The cell is too small to have cell division !')
+                # if max([i.area for i in
+                #         list(matched_cells_dict.keys())]) > parent.area * area_size_t:  # 如果母细胞太小了，不认为会发生有丝分裂，转向单项判断
+                #     raise MitosisError('The cell is too small to have cell division !')
                 # if self.matcher.calcAreaSimilar(cells[0], cells[1]) > area_t and self.matcher.compareShapeSimilar(
                 #         cells[0], cells[1]) < shape_t:
                 if self.matcher.calcAreaSimilar(cells[0], cells[1]) > area_t:
@@ -719,7 +721,7 @@ class Matcher(object):
         matched = {}
         for cell in similar_dict:
             score = similar_dict[cell]
-            if score.get('IoU') > 0.05:
+            if score.get('IoU') > 0:
                 matched[cell] = score
         if len(matched) < 2:
             return False
@@ -1029,7 +1031,7 @@ class Tracker(object):
 
         text = get_str()
         cv2.putText(im_rgb1, text, (bbox[3], bbox[1]), cv2.FONT_HERSHEY_TRIPLEX,
-                    0.5, (255, 255, 255), 1)
+                    0.75, (255, 255, 255), 1)
 
         return im_rgb1
 
@@ -1086,47 +1088,41 @@ class Tracker(object):
             thread_pool_executor.submit(work, parent)
         thread_pool_executor.shutdown(wait=True)
 
-    def is_new_cell(self):
-        """判断是否为新出现的细胞"""
-
     def handle_duplicate_match(self, duplicate_match_cell):
-        """解决一个细胞被多个细胞匹配"""
+        """解决一个细胞被多个细胞重复匹配"""
         child_node = CellNode(duplicate_match_cell)
         tmp = self.get_current_tree(duplicate_match_cell)
         parent0 = tmp[0].parent(child_node.nid)
 
         parent1 = tmp[1].parent(child_node.nid)
-        if not (parent0.is_root() and parent1.is_root()):
-            parent00 = tmp[0].parent(parent0.nid)
-            parent11 = tmp[1].parent(parent1.nid)
-            tree_dict = {parent00: tmp[0], parent11: tmp[1]}
-            sm0 = self.matcher.match_similar(duplicate_match_cell, parent00.cell)
-            sm1 = self.matcher.match_similar(duplicate_match_cell, parent11.cell)
-            # match_score = {parent00: sm0['IoU'] + 1 / (sm0['distance'] + 1e-5),
-            #                parent11: sm1['IoU'] + 1 / (sm0['distance'] + 1e-5), }
-            match_score = {parent00: sm0['distance'],
-                           parent11: sm0['distance']}
-            error_parent = max(match_score)
-        else:
-            tree_dict = {parent0: tmp[0], parent1: tmp[1]}
-            sm0 = self.matcher.match_similar(duplicate_match_cell, parent0.cell)
-            sm1 = self.matcher.match_similar(duplicate_match_cell, parent1.cell)
-            # match_score = {parent0: sm0['IoU'] + 1 / (sm0['distance'] + 1e-5),
-            #                parent1: sm1['IoU'] + 1 / (sm0['distance'] + 1e-5), }
-            match_score = {parent0: sm0['distance'] ,
-                           parent1: sm0['distance']}
-            # truth_parent = max(match_score)
-            error_parent = max(match_score)
+        # if not (parent0.is_root() and parent1.is_root()):
+        #     parent00 = tmp[0].parent(parent0.nid)
+        #     parent11 = tmp[1].parent(parent1.nid)
+        #     tree_dict = {parent00: tmp[0], parent11: tmp[1]}
+        #     sm0 = self.matcher.match_similar(duplicate_match_cell, parent00.cell)
+        #     sm1 = self.matcher.match_similar(duplicate_match_cell, parent11.cell)
+        #     # match_score = {parent00: sm0['IoU'] + 1 / (sm0['distance'] + 1e-5),
+        #     #                parent11: sm1['IoU'] + 1 / (sm0['distance'] + 1e-5), }
+        #     match_score = {parent00: sm0['distance'],
+        #                    parent11: sm0['distance']}
+        #     error_parent = max(match_score)
+        # else:
+        tree_dict = {parent0: tmp[0], parent1: tmp[1]}
+        sm0 = self.matcher.match_similar(duplicate_match_cell, parent0.cell)
+        sm1 = self.matcher.match_similar(duplicate_match_cell, parent1.cell)
+        # match_score = {parent0: sm0['IoU'] + 1 / (sm0['distance'] + 1e-5),
+        #                parent1: sm1['IoU'] + 1 / (sm0['distance'] + 1e-5), }
+        match_score = {parent0: sm0['distance'] ,
+                       parent1: sm0['distance']}
+        # truth_parent = max(match_score)
+        error_parent = max(match_score)
         # if len(tree_dict[truth_parent].nodes) < 3:
         #     error_parent = truth_parent
         tree_dict[error_parent].remove_node(child_node.nid)
         return {error_parent: tree_dict[error_parent]}
 
-    def handle_loss_match(self):
-        """解决细胞没有被匹配上"""
-
     def rematch(self, fe1: FeatureExtractor, fe2: FeatureExtractor):
-        """对于发生漏检的细胞，其下一帧与上一帧进行重新匹配"""
+        """对于发生漏检的细胞，将其上下帧与缓存帧进行重新匹配"""
         unmatched_list = [cell for cell in fe1.cells if cell.is_be_matched is False]
         if not unmatched_list:
             return
@@ -1136,39 +1132,40 @@ class Tracker(object):
             if cell.is_be_matched is False:
                 handle_flag = False
                 trees = self.trees
+                wait_dict = {}
+                wait_tree_map = {}
                 for tree in trees:
-                    matched_cell = None
                     last_layer_cells = [cell for cell in tree.last_layer_cell]
-                    last_2_layer_cells = [tree.parent(tree.last_layer_cell[cell]) for cell in last_layer_cells
-                                          if tree.contains(tree.last_layer_cell[cell])]
                     for last_layer_cell in last_layer_cells:
                         if 1 < current_frame - last_layer_cell.frame < 4:
                             match_result = self.matcher.match_similar(last_layer_cell, cell)
                             if match_result['IoU'] > 0 or match_result['distance'] < cell.d_long:
-                                matched_cell = last_layer_cell
+                                wait_dict[last_layer_cell] = match_result['IoU'] + 10 /(match_result['distance'] + 1e-5)
+                                wait_tree_map[last_layer_cell] = tree
                                 handle_flag = True
-                                break
                     if (not handle_flag):
                         for last_layer_cell in last_layer_cells:
-                            match_result = self.matcher.match_similar(last_layer_cell, cell)
-                            if match_result['distance'] < 50:
-                                matched_cell = last_layer_cell
-                                handle_flag = True
-                                break
-                    if matched_cell is not None:
-                        child_node = CellNode(cell)
-                        parent_node = CellNode(matched_cell)
-                        tree.add_node(child_node, parent_node)
-                        cell.is_accurate_matched = True
-                        cell.is_be_matched = True
-                        cell.set_status(tree.status)
-                        cell.set_match_status('ACCURATE')
-                        cell.set_track_id(tree.track_id, 1)
-                        cell.set_branch_id(matched_cell.branch_id)
-                        self.matcher.match_single_cell(tree, fe2)
+                            # if 1 < current_frame - last_layer_cell.frame < 5:
+                            if current_frame > last_layer_cell.frame:
+                                match_result = self.matcher.match_similar(last_layer_cell, cell)
+                                if match_result['distance'] < 50:
+                                    wait_dict[last_layer_cell] = match_result['IoU'] + 10 /(match_result['distance'] + 1e-5)
+                                    wait_tree_map[last_layer_cell] = tree
+                                    handle_flag = True
+                if wait_dict:
+                    matched_cell = max(wait_dict, key=wait_dict.get)
+                    tree = wait_tree_map[matched_cell]
+                    child_node = CellNode(cell)
+                    parent_node = CellNode(matched_cell)
+                    tree.add_node(child_node, parent_node)
+                    cell.is_accurate_matched = True
+                    cell.is_be_matched = True
+                    cell.set_status(tree.status)
+                    cell.set_match_status('ACCURATE')
+                    cell.set_track_id(tree.track_id, 1)
+                    cell.set_branch_id(matched_cell.branch_id)
+                    self.matcher.match_single_cell(tree, fe2)
                 if not handle_flag:
-                    print('exec new tracking tree')
-                    print(cell)
                     tree = TrackingTree(track_id=self.id_distributor())
                     cell.set_track_id(tree.track_id, 1)
                     cell.set_branch_id(0)
@@ -1229,13 +1226,14 @@ class Tracker(object):
     def check_track(self, fe1: FeatureExtractor, fe2: FeatureExtractor, fe3: FeatureExtractor):
         """检查track结果，查看是否有错误匹配和遗漏， 同时更新匹配状态"""
         cells = sorted(fe2.cells, key=lambda cell: cell.sort_value, reverse=True)
+        self.rematch(fe1, fe2)
         for cell in cells:
             tmp = self.get_current_tree(cell)
             if len(tmp) > 1:
                 # print(list(i.track_id for i in tmp))
                 self.handle_duplicate_match(duplicate_match_cell=cell)
                 # pass
-        self.rematch(fe1, fe2)
+        # self.rematch(fe1, fe2)
         # if not unmatched_list:
         #     return
         # print(unmatched_list)
@@ -1292,7 +1290,8 @@ class Tracker(object):
         for fe_before, fe_current, fe_next in tqdm(self.feature_ext, total=range, desc='tracking process'):
             # self.track_near_frame(fe_before, fe_current)
             start_time = time.time()
-            self.track_near_frame_mult_thread(fe_before, fe_current)
+            self.track_near_frame(fe_before, fe_current)
+            # self.track_near_frame_mult_thread(fe_before, fe_current)
             self.fe_cache.append(fe_before)
             self.check_track(fe_before, fe_current, fe_next)
             # # 检查缓存队列长度是否超过 5，如果超过了，就从左侧弹出最旧的 fe 对象
