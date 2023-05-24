@@ -6,6 +6,7 @@ import logging
 import warnings
 import time
 
+import imagesize
 import tensorflow as tf
 
 sys.path.append('.')
@@ -52,6 +53,7 @@ if args.pcna is False and (not args.ns):
     sys.exit(-1)
 else:
     pcna = args.pcna
+    image_width, image_height = imagesize.get(pcna)
 if args.bf is False and (not args.ns):
     logging.error("bf image must be given!")
     sys.exit(-1)
@@ -142,4 +144,4 @@ if args.trackpcna:
         new_jsons = jsons
     logging.info(f"Tracking result will saved to {track_output}")
     logging.info('start tracking ...')
-    track.start_track(fjson=new_jsons, fpcna=pcna, fbf=bf, fout=track_output, image_width=2048, image_height=2048)
+    track.start_track(fjson=new_jsons, fpcna=pcna, fbf=bf, fout=track_output, image_width=image_width, image_height=image_height)
