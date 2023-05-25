@@ -43,7 +43,7 @@ def evaluate(truth_df, predict_df, outfile=None):
                     'mostly_tracked', 'partially_tracked',
                     'mostly_lost', 'num_false_positives',
                     'num_misses', 'num_switches',
-                    'num_fragmentations', 'mota',
+                    'num_fragmentations', 'mota',  'num_false_positives',  'num_misses'
                     ]
 
     acc = mm.MOTAccumulator()
@@ -99,10 +99,10 @@ def evaluate(truth_df, predict_df, outfile=None):
 def run_evaluate(gap):
 
     # dirs = ['copy_of_1_xy01', 'copy_of_1_xy19', 'MCF10A_copy02', 'MCF10A_copy11', 'src06']
-    dirs = ['MCF10A_copy02']
+    dirs = ['src06']
     base = r'G:\paper\evaluate_data'
     for i in dirs:
-        prediction_CCDeep = rf'G:\paper\evaluate_data\{gap*5}min\{i}_{gap*5}min\tracking_output.ok\track.csv'
+        prediction_CCDeep = rf'G:\paper\evaluate_data\{gap*5}min\{i}_{gap*5}min\tracking_output\track.csv'
         prediction_pcnadeep = rf'G:\paper\evaluate_data\{gap*5}min\{i}_{gap*5}min\track\refined-pcnadeep(CCDeep_format).csv'
         prediction_GT = rf"G:\paper\evaluate_data\{gap*5}min\{i}_{gap*5}min\{gap*5}-track-GT.csv"
         prediction_trackmeta = rf"G:\paper\evaluate_data\{gap*5}min\{i}_{gap*5}min\export.csv"
@@ -128,9 +128,60 @@ def run_evaluate(gap):
     # evaluate(*prepare_data(pred, gt), outfile=out)
     # evaluate(*prepare_data(pred2, gt), outfile=out)
 
+def run_without_trackmeta(gap):
+
+    dirs = ['copy_of_1_xy01', 'copy_of_1_xy19', 'MCF10A_copy02', 'MCF10A_copy11', 'src06']
+    # dirs = ['src06']
+    base = r'G:\paper\evaluate_data'
+    for i in dirs:
+        prediction_CCDeep = rf'G:\paper\evaluate_data\{gap*5}min\{i}_{gap*5}min\tracking_output\track.csv'
+        prediction_pcnadeep = rf'G:\paper\evaluate_data\{gap*5}min\{i}_{gap*5}min\track\refined-pcnadeep(CCDeep_format).csv'
+        prediction_GT = rf"G:\paper\evaluate_data\{gap*5}min\{i}_{gap*5}min\{gap*5}-track-GT.csv"
+        # prediction_trackmeta = rf"G:\paper\evaluate_data\{gap*5}min\{i}_{gap*5}min\export.csv"
+        out = rf"G:\paper\evaluate_data\{gap*5}min\{i}_{gap*5}min\evaluate-track.csv"
+        print(prediction_GT)
+        print(prediction_CCDeep)
+        print(prediction_pcnadeep)
+        print(out)
+        ccdeep_result = evaluate(*prepare_data(prediction_CCDeep, prediction_GT))
+        pcnadeep_result = evaluate(*prepare_data(prediction_pcnadeep, prediction_GT))
+        # trackmeta_result = evaluate(*prepare_data(prediction_trackmeta, prediction_GT))
+        result = pd.concat([ccdeep_result, pcnadeep_result])
+        result.index = ['CCDeep', 'pcnadeep']
+        print(result)
+        result.to_csv(out, index=True)
+
+
+def evaluate_loss_detection():
+    gap = 1
+    dirs = ['copy_of_1_xy01',  'copy_of_1_xy19']
+    # dirs = ['copy_of_1_xy01', 'copy_of_1_xy19', 'MCF10A_copy02', 'MCF10A_copy11', 'src06']
+    for i in dirs:
+        ratio = [0.05, 0.1, 0.2, 0.3, 0.5]
+        for r in ratio:
+            prediction_CCDeep_loss = rf'G:\paper\evaluate_data\{gap * 5}min\{i}_{gap * 5}min\detection_loss_test\{int(r * 100)}%\tracking_output\track.csv'
+            prediction_pcnadeep_loss = rf'G:\paper\evaluate_data\{gap * 5}min\{i}_{gap * 5}min\detection_loss_test\{int(r * 100)}%\track\refined-pcnadeep(CCDeep_format).csv'
+            prediction_GT = rf"G:\paper\evaluate_data\{gap*5}min\{i}_{gap*5}min\{gap*5}-track-GT.csv"
+
+            out = rf'G:\paper\evaluate_data\{gap * 5}min\{i}_{gap * 5}min\detection_loss_test\{int(r * 100)}%\evaluate-loss-track.csv'
+            # ccdeep_result = evaluate(*prepare_data(prediction_CCDeep, prediction_GT))
+            ccdeep_loss_result = evaluate(*prepare_data(prediction_CCDeep_loss, prediction_GT))
+
+            # pcnadeep_result = evaluate(*prepare_data(prediction_pcnadeep, prediction_GT))
+            pcnadeep_loss_result = evaluate(*prepare_data(prediction_pcnadeep_loss, prediction_GT))
+
+            print(ccdeep_loss_result)
+            print(pcnadeep_loss_result)
+
+            result = pd.concat([ccdeep_loss_result, pcnadeep_loss_result])
+            result.index = ['CCDeep', 'pcnadeep']
+            print(result)
+            result.to_csv(out, index=True)
 
 if __name__ == '__main__':
-    run_evaluate(1)
+    evaluate_loss_detection()
+    # run_without_trackmeta(6)
+    # run_evaluate(2)
     # gap = 6
     # pred = rf'E:\paper\evaluate_data\{gap*5}min\copy_of_1_xy01_{gap*5}min\tracking_output\(new)track.csv'
     # pred2 = rf'E:\paper\evaluate_data\{gap*5}min\copy_of_1_xy01_{gap*5}min\track\refined-pcnadeep(CCDeep_format).csv'

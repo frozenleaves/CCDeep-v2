@@ -857,7 +857,7 @@ class Matcher(object):
                 tree.status.reset_M_count()
             if parent.phase == 'M':
                 tree.status.add_M_count()
-            if tree.status.predict_M_len >= 3:
+            if tree.status.predict_M_len >= 2:
                 tree.status.enter_mitosis(parent.frame - 3)
 
             # predict_child = self.predict_next_position(parent)

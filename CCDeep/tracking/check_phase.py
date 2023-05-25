@@ -8,6 +8,7 @@ import pickle
 
 import pandas as pd
 
+from CCDeep.tracking.base import Cell
 from CCDeep.tracking.tracker import Tracker, CellNode, TrackingTree
 
 
@@ -394,7 +395,32 @@ def track_tree_to_table(tracker: Tracker, filepath):
         cell_nodes = cell_lineage.get('cells')
         parent = cell_lineage.get('parent')
         series_list = []
-        for node in cell_nodes:
+        new_nodes = []
+        before_index = 0
+        current_index = 1
+        for cell_node_index in range(len(cell_nodes) - 1):
+            before_node = cell_nodes[before_index]
+            current_node = cell_nodes[current_index]
+            new_nodes.append(before_node)
+            if current_node.cell.frame - before_node.cell.frame != 1:
+                for frame in range(before_node.cell.frame + 1, current_node.cell.frame):
+                    # gap_cell = deepcopy(before_node.cell)
+                    # gap_cell.frame = frame
+                    gap_cell = Cell(position=before_node.cell.position, phase=before_node.cell.phase, frame_index=frame)
+                    gap_cell.set_track_id(before_node.cell.track_id, 1)
+                    gap_cell.set_cell_id(before_node.cell.cell_id)
+                    gap_cell.set_branch_id(before_node.cell.branch_id)
+                    gap_node = CellNode(gap_cell)
+                    new_nodes.append(gap_node)
+            elif current_index == len(cell_nodes) - 1:
+                new_nodes.append(current_node)
+            else:
+                pass
+            before_index += 1
+            current_index += 1
+
+        # for node in cell_nodes:
+        for node in new_nodes:
             col = [node.cell.frame, node.cell.track_id,
                    node.cell.cell_id, parent.cell.cell_id,
                    node.cell.center[0], node.cell.center[1],
@@ -402,7 +428,7 @@ def track_tree_to_table(tracker: Tracker, filepath):
                    node.cell.position[0], node.cell.position[1]]
             s = pd.Series(dict(zip(track_detail_columns, col)))
             series_list.append(s)
-        return series_list
+        return series_list, new_nodes
 
     def generate_series_pcnadeep(cell_lineage):
         track_detail_columns_complete_pcnadeep = ['frame', 'trackId', 'lineageId', 'parentTrackId',
@@ -430,7 +456,15 @@ def track_tree_to_table(tracker: Tracker, filepath):
         parser = parser_dict[tree]
         for node_index in parser.root_parent_list:
             cell_lineage = parser.lineage_dict.get(node_index)
-            series_list = generate_series(cell_lineage)
+            series_list, new_node_list = generate_series(cell_lineage)
+            # for i in range(len(new_node_list) - 1):
+            #     parent = new_node_list[i]
+            #     child = new_node_list[ i+ 1]
+            #     if parent in tree and child not in tree:
+            #         old_child = tree.children(parent.nid)
+            #         tree.add_node(child, parent=parent)
+            #         tree.move_node(old_child[0].nid, child.nid)
+
             for series in series_list:
                 track_detail_dataframe = track_detail_dataframe.append(series, ignore_index=True)
             series_list_pcnadeep = generate_series_pcnadeep(cell_lineage)
@@ -523,8 +557,8 @@ def run(annotation, output_dir, basename, track_range=None, save_visualize=True,
     track_visualization_fname = os.path.join(output_dir, 'track_visualization.tif')
     track_json_fname = os.path.join(output_dir, 'result_with_track.json')
     tracktree_save_path = os.path.join(output_dir, 'tracktree')
-    tracker.track_tree_to_json(tracktree_save_path)
     track_tree_to_table(tracker, track_table_fname)
+    tracker.track_tree_to_json(tracktree_save_path)
     if track_to_json:
         track_trees_to_json(tracker, track_json_fname, xrange=xrange, basename=basename)
     if save_visualize:
