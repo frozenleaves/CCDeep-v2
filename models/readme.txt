@@ -1,0 +1,2 @@
+please download the segmentation and classification model and copy into this dir, our segmentation model path is [./models/segment/20x/] and [./models/segment_dev/];
+classification model path is [./models/classify/20x/final/model] and [./models/classify/20x/best/model]

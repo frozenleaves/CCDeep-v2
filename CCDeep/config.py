@@ -16,9 +16,9 @@ import time
 
 TIMES = 20  # Image magnification
 
-SEG_DEV = True
+SEG_DEV = True  # 是否启用开发版本的segment model
 
-AUGMENTATION_IN_TRAINING = False
+AUGMENTATION_IN_TRAINING = False  # 是否在训练图像分类过程中启用数据增强
 
 RAW_INPUT_IMAGE_SIZE = (2048, 2048)  # predict image size
 
