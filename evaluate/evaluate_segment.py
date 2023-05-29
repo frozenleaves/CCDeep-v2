@@ -67,7 +67,7 @@ def ellipse_points(center, rx, ry, num_points=100, theta=0):
     return all_x, all_y
 
 
-def json2mask(JsonFilePath, img, mask):
+def json2mask(JsonFilePath, mask):
     """
     :param JsonFilePath:  需要转化的json文件路径
     :param img: json文件指向的tif图片所在目录
@@ -202,7 +202,7 @@ def get_SEG_GT_mask():
     json_file = r'I:\paper\evaluate_data\evaluation_for_segmentation\evaluate.json'
     tif_dir = r'I:\paper\evaluate_data\evaluation_for_segmentation\image'
     out = r'I:\paper\evaluate_data\evaluation_for_segmentation\mask-CCDeep'
-    json2mask(json_file, tif_dir, out)
+    json2mask(json_file,  out)
 
 
 if __name__ == '__main__':

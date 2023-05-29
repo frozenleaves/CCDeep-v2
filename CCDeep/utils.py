@@ -404,12 +404,6 @@ class DataGenerator(object):
 class ConverterXY(object):
     """
     根据掩膜的坐标，将其转化为via可识读的json文件
-    for example:
-    >>> co = [[1, 2, 3, 4], [5, 6, 7, 8]]
-    >>> img = 'test.png'
-    >>> con = ConverterXY(img, co)
-    >>> with open('test.json', 'w') as f:
-    >>>     json.dump(con.json, f)
     """
 
     def __init__(self, img_name: str, coordinates: ArrayLike, phase: dict = None):
@@ -466,6 +460,56 @@ class ConverterXY(object):
     @property
     def json(self):
         return self.roi2json()
+
+
+class ND2Converter(object):
+    """解析nd2文件，从中导出单个视野的timelapse tif文件"""
+    
+    def __init__(self):
+        self.__image_path = None
+        self.init_flag = False
+
+    def init_nc(self, filename):
+        self.__image_path = filename
+        self.reader = ND2Reader(self.__image_path)
+        self.frame_len =self.reader.metadata.get('num_frames')
+        self.channels = self.reader.metadata.get('channels')
+        self.channel_num = len(self.channels)
+        self.field_len = len(list(self.reader.metadata.get('fields_of_view')))
+        self.image_size = (self.reader.metadata.get('width'), self.reader.metadata.get('height'))
+        self.init_flag = True
+
+    def del_nc(self):
+        if self.reader:
+            self.reader.close()
+
+    def __save(self, images, fname):
+        tifffile.imwrite(fname, images)
+
+    def nd2_to_tif(self, channel=0, field=0, xrange=None):
+        if not self.init_flag:
+            raise RuntimeError('image not init')
+        if xrange is None:
+            xrange = self.frame_len
+        images = []
+        for t in tqdm(range(0, xrange)):
+            # print(v)
+            image = np.array(self.reader.get_frame_2D(c=channel, t=t, z=0, x=0, y=0, v=field))
+            images.append(image)
+        tiff_list = images[0][np.newaxis, ::]
+        for i in images[1:]:
+            new_gray = i[np.newaxis, ::]
+            tiff_list = np.append(tiff_list, new_gray, axis=0)
+        return tiff_list
+
+    def save_image(self, image, channel, field):
+        channel_name = {0: 'dic', 1: 'pcna'}
+        save_name = f'copy_of_{field}_{channel_name[channel]}.tif'
+        path = os.path.join(os.path.dirname(self.__image_path), 'tif')
+        if not os.path.exists(path):
+            os.mkdir(path)
+        filename = os.path.join(path, save_name)
+        self.__save(image, filename)
 
 
 def deduce_transition(l, tar, confidence, min_tar, max_res, escape=0, casual_end=True):

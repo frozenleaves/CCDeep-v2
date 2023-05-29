@@ -85,7 +85,11 @@ if not args.ns:
     from CCDeep import prediction
 
     logging.info('start segment ...')
-    jsons = prediction.segment(pcna=pcna, bf=bf, output=output, segment_model=None)
+    if args.range is False:
+        xrange = None
+    else:
+        xrange = int(args.range)
+    jsons = prediction.segment(pcna=pcna, bf=bf, output=output, segment_model=None, xrange=xrange)
 
 elif args.ns and args.js:
     jsons = args.js
@@ -116,7 +120,8 @@ if args.track:
                           export_visualization=True, basename=os.path.basename(args.pcna).replace('.tif', ''))
 
 end_time_ccdeep = time.time()
-print(f'cost time: {end_time_ccdeep - start_time_ccdeep:.4f}')
+if args.track:
+    print(f'tracking cost time: {end_time_ccdeep - start_time_ccdeep:.4f}')
 
 if args.trackpcna:
     from CCDeep.tracking_pcnadeep import track

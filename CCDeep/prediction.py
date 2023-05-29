@@ -10,6 +10,8 @@ import os
 from copy import deepcopy
 from typing import Tuple, List
 
+import tifffile
+
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 import sys
@@ -22,13 +24,19 @@ from tensorflow.python.framework.errors_impl import ResourceExhaustedError
 import numpy as np
 from csbdeep.utils import normalize
 from stardist.models import StarDist2D
-from .train_classify import get_model
-from . import utils, config
+from CCDeep.train_classify import get_model
+from CCDeep import utils, config
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
-logging.basicConfig(level=logging.INFO)
+root_logger = logging.getLogger()
+for h in root_logger.handlers:
+    root_logger.removeHandler(h)
 
+logging.basicConfig(format="%(asctime)s %(levelname)s: %(message)s", datefmt="%Y-%M-%d %H:%M:%S", level=logging.INFO)
+sys.stdout = open(os.devnull, 'w')
+
+SEG_DEV = config.SEG_DEV
 
 
 class Predictor:
@@ -176,10 +184,7 @@ class Prediction:
             image_data.append(data)
             id_data.append(cell.image_id)
         images = np.array(image_data)
-        print('predict cell count ', len(image_data))
         phases = self.predict_phase(images)
-        pl = list(phases)
-        print(f"G1/G2: {pl.count('G1/G2')}\nS: {pl.count('S')}\nM: {pl.count('M')}")
         return phases, rois_after_filter
 
     def exportResult(self):
@@ -191,7 +196,11 @@ class Segmenter(object):
         if segment_model is None:
             sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
             if config.TIMES == 20:
-                self.model = StarDist2D(None, name=config.segment_model_name_20x,
+                if SEG_DEV:
+                    self.model = StarDist2D(None, name=config.segment_dev_model_name,
+                                       basedir=config.segment_dev_model_basedir)
+                else:
+                    self.model = StarDist2D(None, name=config.segment_model_name_20x,
                                         basedir=config.segment_model_saved_dir_20x)
             elif config.TIMES == 60:
                 self.model = StarDist2D(None, name=config.segment_model_name_60x,
@@ -203,11 +212,21 @@ class Segmenter(object):
 
     @retry.retry(exceptions=ResourceExhaustedError)
     def segment(self, image: np.ndarray):
+        img = np.dstack([image, image])
         axis_norm = (0, 1)  # normalize channels independently
-        im = normalize(image, 1, 99.8, axis=axis_norm)
-        labels, details = self.model.predict_instances(im)  # TODO 优化此处限速流程 Optimize the speed limit process here
+        if SEG_DEV:
+            im = normalize(img, 1, 99.8, axis=axis_norm)
+        else:
+            im = normalize(image, 1, 99.8, axis=axis_norm)
+        labels, details = self.model.predict_instances(im)
         return labels, details
 
+    def segment_v2(self, image_dic, image_mcy):
+        axis_norm = (0, 1)
+        img = np.dstack([ normalize(image_mcy, 1, 99.8, axis=axis_norm),  normalize(image_dic, 1, 99.8, axis=axis_norm)])
+        # im = normalize(img, 1, 99.8, axis=axis_norm)
+        labels, details = self.model.predict_instances(img)
+        return labels, details
 
 class Segmentation(object):
     def __init__(self,
@@ -230,6 +249,8 @@ class Segmentation(object):
         self.img_dic = image_dic
 
     def segment(self):
+        if SEG_DEV:
+            return self.segmentor.segment_v2(self.img_dic, self.img_mcy)
         return self.segmentor.segment(image=self.img_mcy)
 
     @property
@@ -242,6 +263,9 @@ class Segmentation(object):
 
     def rois(self):
         return self.details['coord']
+
+    def class_info(self):
+        return self.details['class_id']
 
     def save_labels(self, label_save_path=None):
         from csbdeep.io import save_tiff_imagej_compatible
@@ -292,7 +316,7 @@ class Segmentation(object):
             images.append(test_img / 255)
             # print(Predictor().predict(np.array([test_img])))
         ret = Predictor().predict(np.array(images))
-        print(f'G1/G2: {ret.count("G1/G2")}, S: {ret.count("S")}, M: {ret.count("M")}')
+
 
     def __add_predict_phase(self):
         rois = self.__get_segment_result()
@@ -313,7 +337,7 @@ class Segmentation(object):
         predictor = Prediction(mcy=self.img_mcy, dic=self.img_dic, rois=rois,
                                predictor=self.predictor)
 
-        phases, rois_after_filter = predictor.predict()  # 限速步骤 # TODO 优化此处限速流程 Optimize the speed limit process here
+        phases, rois_after_filter = predictor.predict()
         assert len(rois_after_filter) == len(phases)
         for i in zip(rois, phases):
             all_x = []
@@ -335,7 +359,9 @@ class Segmentation(object):
                 "file_attributes": {}
             }
         }
-        return tmp
+        pl = list(phases)
+        info = (f"predicted num: {len(pl)}\tG1/G2: {pl.count('G1/G2')}; \tS: {pl.count('S')}; \tM: {pl.count('M')}\n")
+        return tmp, info
 
     @property
     def predict_result(self):
@@ -347,12 +373,13 @@ class Segmentation(object):
             json.dump(self.__add_predict_phase(), f)
 
 
-def segment(pcna: os.PathLike | str, bf: os.PathLike | str, output: os.PathLike | str, segment_model=None):
+def segment(pcna: os.PathLike | str, bf: os.PathLike | str, output: os.PathLike | str, segment_model=None, xrange=None):
     jsons = {}
     mcy_data = utils.readTif(filepath=pcna)
     dic_data = utils.readTif(filepath=bf)
     segmenter = Segmenter(segment_model=segment_model)
     predictor = Predictor()
+    _xrange = xrange
     while True:
         try:
             # mcy_img, imagename = next(mcy_data)
@@ -360,22 +387,22 @@ def segment(pcna: os.PathLike | str, bf: os.PathLike | str, output: os.PathLike 
             dic_img, _ = next(dic_data)
             # mcy_img = utils.divideImage(mcy_img, 4, 4)[0]
             # dic_img = utils.divideImage(dic_img, 4, 4)[0]
-            print(f'start segment {os.path.basename(imagename)} ...')
             start_time = time.time()
-
             seg = Segmentation(image_mcy=mcy_img,
                                imagename=imagename,
                                image_dic=dic_img,
                                segmenter=segmenter,
                                predictor=predictor)
-            # seg.predict()
-
-            value = seg.predict_result
+            value, predict_phase_info = seg.predict_result
             jsons.update(value)
             end_time = time.time()
-            print(f'finish segment {os.path.basename(imagename)}', 'ok')
-            print(f'cost time {end_time - start_time}s')
+            logging.info(f'segment {os.path.basename(imagename)}; cost time: {end_time - start_time:.2f}s')
+            logging.info(predict_phase_info)
             del seg
+            if _xrange is not None:
+                _xrange -= 1
+                if not _xrange:
+                    break
         except StopIteration:
             break
     json_filename = os.path.basename(pcna).replace('.tif', '.json')
@@ -389,17 +416,18 @@ def segment(pcna: os.PathLike | str, bf: os.PathLike | str, output: os.PathLike 
 
 
 if __name__ == '__main__':
+    pass
     # utils.tif2png(r'G:\Frozenleaves\20211130-10A-b10-24h-20X-1-10-ctrl-11-20-SR3029\copy_of_01\mcy\copy_of_01.tif',
     #               r'G:\Frozenleaves\20211130-10A-b10-24h-20X-1-10-ctrl-11-20-SR3029\copy_of_01\png')
 
     # segment(pcna=r'G:\Frozenleaves\20211130-10A-b10-24h-20X-1-10-ctrl-11-20-SR3029\copy_of_01\mcy\copy_of_01.tif',
     #         bf=r'G:\Frozenleaves\20211130-10A-b10-24h-20X-1-10-ctrl-11-20-SR3029\copy_of_01\dic\copy_of_01.tif',
-    #         output=r'G:\Frozenleaves\20211130-10A-b10-24h-20X-1-10-ctrl-11-20-SR3029\copy_of_01\copy_of_01.json',
+    #         output=r'G:\Frozenleaves\20211130-10A-b10-24h-20X-1-10-ctrl-11-20-SR3029\copy_of_01\copy_of_01.json,
     #         segment_model=None)
 
     # segment(pcna=r'G:\20x_dataset\copy_of_xy_16\raw\copy_of_1_xy16-mcy.tif',
     #         bf=r'G:\20x_dataset\copy_of_xy_16\raw\copy_of_1_xy16-dic.tif',
-    #         output=r'G:\20x_dataset\copy_of_xy_16\raw\copy_of_1_xy16_new.json', segment_model=None)
+    #         output=r'G:\20x_dataset\copy_of_xy_16\raw\copy_of_1_xy16_new.json, segment_model=None)
 
     # segment(pcna='/home/zje/CellClassify/predict_data/dataset/test_pcna.tif',
     #         bf='/home/zje/CellClassify/predict_data/dataset/test_dic.tif',
@@ -412,4 +440,5 @@ if __name__ == '__main__':
     # p = Predict(mcy=mcy, dic=dic, annotation_json=ann, imagesize=(1200, 1200))
     # p.predict(frame=None)
 
-    pass
+
+

@@ -98,8 +98,8 @@ def evaluate(truth_df, predict_df, outfile=None):
 
 def run_evaluate(gap):
 
-    # dirs = ['copy_of_1_xy01', 'copy_of_1_xy19', 'MCF10A_copy02', 'MCF10A_copy11', 'src06']
-    dirs = ['src06']
+    dirs = ['copy_of_1_xy01', 'copy_of_1_xy19', 'MCF10A_copy02', 'MCF10A_copy11', 'src06']
+    # dirs = ['copy_of_1_xy19']
     base = r'G:\paper\evaluate_data'
     for i in dirs:
         prediction_CCDeep = rf'G:\paper\evaluate_data\{gap*5}min\{i}_{gap*5}min\tracking_output\track.csv'
@@ -118,6 +118,7 @@ def run_evaluate(gap):
         trackmeta_result = evaluate(*prepare_data(prediction_trackmeta, prediction_GT))
         result = pd.concat([ccdeep_result, pcnadeep_result, trackmeta_result])
         result.index = ['CCDeep', 'pcnadeep', 'trackmeta']
+        result = result.round(3)
         print(result)
         result.to_csv(out, index=True)
 
@@ -131,7 +132,7 @@ def run_evaluate(gap):
 def run_without_trackmeta(gap):
 
     dirs = ['copy_of_1_xy01', 'copy_of_1_xy19', 'MCF10A_copy02', 'MCF10A_copy11', 'src06']
-    # dirs = ['src06']
+    # dirs = ['copy_of_1_xy19']
     base = r'G:\paper\evaluate_data'
     for i in dirs:
         prediction_CCDeep = rf'G:\paper\evaluate_data\{gap*5}min\{i}_{gap*5}min\tracking_output\track.csv'
@@ -148,13 +149,14 @@ def run_without_trackmeta(gap):
         # trackmeta_result = evaluate(*prepare_data(prediction_trackmeta, prediction_GT))
         result = pd.concat([ccdeep_result, pcnadeep_result])
         result.index = ['CCDeep', 'pcnadeep']
+        result = result.round(3)
         print(result)
-        result.to_csv(out, index=True)
+        # result.to_csv(out, index=True)
 
 
 def evaluate_loss_detection():
     gap = 1
-    dirs = ['copy_of_1_xy01',  'copy_of_1_xy19']
+    dirs = [ 'MCF10A_copy02', 'MCF10A_copy11']
     # dirs = ['copy_of_1_xy01', 'copy_of_1_xy19', 'MCF10A_copy02', 'MCF10A_copy11', 'src06']
     for i in dirs:
         ratio = [0.05, 0.1, 0.2, 0.3, 0.5]
@@ -175,13 +177,15 @@ def evaluate_loss_detection():
 
             result = pd.concat([ccdeep_loss_result, pcnadeep_loss_result])
             result.index = ['CCDeep', 'pcnadeep']
+            result = result.round(3)
             print(result)
-            result.to_csv(out, index=True)
+            # result.to_csv(out, index=True)
 
 if __name__ == '__main__':
     evaluate_loss_detection()
-    # run_without_trackmeta(6)
-    # run_evaluate(2)
+    # for i in range(1, 2):
+    #     run_without_trackmeta(i)
+    # run_evaluate(1)
     # gap = 6
     # pred = rf'E:\paper\evaluate_data\{gap*5}min\copy_of_1_xy01_{gap*5}min\tracking_output\(new)track.csv'
     # pred2 = rf'E:\paper\evaluate_data\{gap*5}min\copy_of_1_xy01_{gap*5}min\track\refined-pcnadeep(CCDeep_format).csv'

@@ -16,6 +16,8 @@ import time
 
 TIMES = 20  # Image magnification
 
+SEG_DEV = True
+
 AUGMENTATION_IN_TRAINING = False
 
 RAW_INPUT_IMAGE_SIZE = (2048, 2048)  # predict image size
@@ -32,8 +34,8 @@ channels = 2  # image channels
 
 raw = r'H:\CCDeep-data\raw-data\train\raw'   # 训练原始数据集
 
-train_process_20x_detail_data_savefile = f'./logs/{time.ctime()}train_detail_20x.csv'
-train_process_60x_detail_data_savefile = f'./logs/{time.ctime()}train_detail_60x.csv'
+train_process_20x_detail_data_savefile = f'./logs/{int(time.time())}-train_detail_20x.csv'
+train_process_60x_detail_data_savefile = f'./logs/{int(time.time())}-train_detail_60x.csv'
 
 save_model_dir_60x = '../models/classify/60x/model'
 dataset_dir_mcy_60x = '/home/zje/CellClassify/train_dataset/train_data_60x/train_mcy'
@@ -81,6 +83,10 @@ segment_model_name_20x = 'segment_20x_model'
 segment_model_saved_dir_20x = './models/segment/20x/'
 train_dataset_20x = './CCDeep_train_data/segment/train/images/'
 train_label_20x = './CCDeep_train_data/segment/train/masks/'
+
+# segment_dev_model_name = 'PCNA_model_20230511_400epoch-custom'
+segment_dev_model_name = 'segment_dev'
+segment_dev_model_basedir = './models/segment_dev/'
 
 valid_size_20x = 0.1
 
