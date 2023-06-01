@@ -47,11 +47,11 @@ train_dir_dic_60x = os.path.join(dataset_dir_dic_60x, "train")
 valid_dir_dic_60x = os.path.join(dataset_dir_dic_60x, "valid")
 test_dir_dic_60x = os.path.join(dataset_dir_dic_60x, "test")
 
-# save_model_dir_20x = './models/classify/20x/final/model'
-# save_model_dir_20x_best = './models/classify/20x/best/model'
+save_model_dir_20x = './models/classify/20x/final/model'
+save_model_dir_20x_best = './models/classify/20x/best/model'
 
-save_model_dir_20x = './models/classify/20x/final-dev/model'
-save_model_dir_20x_best = './models/classify/20x/best-dev/model'
+# save_model_dir_20x = './models/classify/20x/final-dev/model'
+# save_model_dir_20x_best = './models/classify/20x/best-dev/model'
 
 dataset_dir_20x = r'H:\CCDeep-data\raw-data\train\classification'
 # dataset_dir_20x = r'F:\projects\CellClassify\CCDeep\CCDeep_train_data\classify'

@@ -360,7 +360,7 @@ class Segmentation(object):
             }
         }
         pl = list(phases)
-        info = (f"predicted num: {len(pl)}\tG1/G2: {pl.count('G1/G2')}; \tS: {pl.count('S')}; \tM: {pl.count('M')}\n")
+        info = (f"predicted num: {len(pl)};  G1/G2: {pl.count('G1/G2')}  S: {pl.count('S')}  M: {pl.count('M')}\n")
         return tmp, info
 
     @property

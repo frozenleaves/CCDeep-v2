@@ -308,7 +308,7 @@ class TreeParser(object):
         cell_node_line = lineage.get('cells')
         m1_start = lineage.get('m1_start')
         m2_start = lineage.get('m2_start')
-        m_count = 15
+        m_count = 30
         if m1_start is not None:
             m_start = m1_start
         elif m2_start is not None:

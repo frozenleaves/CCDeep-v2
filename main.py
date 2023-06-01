@@ -19,7 +19,7 @@ if tf.config.list_physical_devices('GPU'):
 sys.path.insert(0, os.path.abspath('CCDeep'))
 sys.path.insert(0, os.path.abspath('.'))
 
-logging.basicConfig(format='%(asctime)s [line:%(lineno)d] %(levelname)s %(message)s', )
+logging.basicConfig(format="%(asctime)s %(levelname)s: %(message)s", datefmt="%Y-%M-%d %H:%M:%S", level=logging.INFO)
 
 parser = argparse.ArgumentParser(description="Welcome to use CCDeep!", add_help=False)
 help_content = """
@@ -72,7 +72,6 @@ else:
             output = os.path.join(os.path.dirname(args.pcna), 'output.json')
     else:
         output = args.output
-logging.info(f"Output segmentation result will saved to {output}")
 
 if args.track is True and args.ns is True and args.js is False:
     logging.error("If you just want to do tracking, please give the `-js` parameter")
@@ -83,8 +82,8 @@ if args.track is True and not args.ns and args.js:
 
 if not args.ns:
     from CCDeep import prediction
-
-    logging.info('start segment ...')
+    logging.info(f"Output segmentation result will saved to {output}")
+    logging.info('Start segment ...')
     if args.range is False:
         xrange = None
     else:
@@ -114,14 +113,14 @@ if args.track:
                 logging.error(f'param <-r/--range >={args.range}, the value must be int!')
                 sys.exit(-1)
         track_output = os.path.dirname(output)
-        logging.info(f"Tracking result will saved to {track_output}")
+        logging.info(f"Tracking result will saved to {track_output}\\tracking_output.")
         logging.info('start tracking ...')
         track.start_track(fjson=jsons, fpcna=args.pcna, fbf=None, fout=track_output, track_range=xrange,
                           export_visualization=True, basename=os.path.basename(args.pcna).replace('.tif', ''))
 
 end_time_ccdeep = time.time()
 if args.track:
-    print(f'tracking cost time: {end_time_ccdeep - start_time_ccdeep:.4f}')
+    logging.info(f'tracking cost time: {end_time_ccdeep - start_time_ccdeep:.4f}')
 
 if args.trackpcna:
     from CCDeep.tracking_pcnadeep import track
@@ -147,6 +146,6 @@ if args.trackpcna:
                 new_jsons = {key: js[key] for key in list(js)[:xrange]}
     else:
         new_jsons = jsons
-    logging.info(f"Tracking result will saved to {track_output}")
-    logging.info('start tracking ...')
+    logging.info('start tracking by PCNAdeep ...')
+    logging.info(f"Tracking result will saved to {track_output}\\track")
     track.start_track(fjson=new_jsons, fpcna=pcna, fbf=bf, fout=track_output, image_width=image_width, image_height=image_height)
