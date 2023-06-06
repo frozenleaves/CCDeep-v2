@@ -5,14 +5,15 @@ import sys
 import logging
 import warnings
 import time
-
 import imagesize
+
+
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+
 import tensorflow as tf
 
 sys.path.append('.')
-
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 if tf.config.list_physical_devices('GPU'):
     tf.config.experimental.set_memory_growth(tf.config.list_physical_devices("GPU")[0], enable=True)
 
@@ -60,9 +61,8 @@ if args.bf is False and (not args.ns):
 else:
     bf = args.bf
 if args.output is False:
-    output = os.path.join(os.getcwd(), os.path.basename(pcna.replace('.tif', '.json')))
+    output = os.path.join(os.path.dirname(pcna), os.path.basename(pcna.replace('.tif', '.json')))
     logging.warning(f"-o  not provided, using the default output file name: {output}")
-    logging.info(f"Output segmentation result will saved to {args.output}")
 else:
     if not args.output.endswith('.json'):
         if not args.ns:
@@ -82,7 +82,7 @@ if args.track is True and not args.ns and args.js:
 
 if not args.ns:
     from CCDeep import prediction
-    logging.info(f"Output segmentation result will saved to {output}")
+    logging.info(f"Segmentation output will saved to {output}")
     logging.info('Start segment ...')
     if args.range is False:
         xrange = None
@@ -98,7 +98,6 @@ else:
 start_time_ccdeep = time.time()
 
 if args.track:
-    # from CCDeep import tracking
     from CCDeep.tracking import track
 
     if args.ot:
@@ -147,5 +146,5 @@ if args.trackpcna:
     else:
         new_jsons = jsons
     logging.info('start tracking by PCNAdeep ...')
-    logging.info(f"Tracking result will saved to {track_output}\\track")
+    logging.info(f"PCNAdeep tracking result will saved to {track_output}\\track")
     track.start_track(fjson=new_jsons, fpcna=pcna, fbf=bf, fout=track_output, image_width=image_width, image_height=image_height)

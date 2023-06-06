@@ -20,6 +20,8 @@ from concurrent.futures import ThreadPoolExecutor
 import shapely
 from libtiff import TIFF
 
+from CCDeep import config
+
 sys.path.append('.')
 sys.path.append('..')
 sys.path.append('../../')
@@ -1113,9 +1115,9 @@ class Tracker(object):
         # match_score = {parent0: sm0['IoU'] + 1 / (sm0['distance'] + 1e-5),
         #                parent1: sm1['IoU'] + 1 / (sm0['distance'] + 1e-5), }
         match_score = {parent0: sm0['distance'] ,
-                       parent1: sm0['distance']}
+                       parent1: sm1['distance']}
         # truth_parent = max(match_score)
-        error_parent = max(match_score)
+        error_parent = min(match_score)
         # if len(tree_dict[truth_parent].nodes) < 3:
         #     error_parent = truth_parent
         tree_dict[error_parent].remove_node(child_node.nid)
@@ -1145,8 +1147,8 @@ class Tracker(object):
                                 handle_flag = True
                     if (not handle_flag):
                         for last_layer_cell in last_layer_cells:
-                            # if 1 < current_frame - last_layer_cell.frame < 5:
-                            if current_frame > last_layer_cell.frame:
+                            if 1 < current_frame - last_layer_cell.frame < config.GAP_WINDOW_LEN:
+                            # if current_frame > last_layer_cell.frame:
                                 match_result = self.matcher.match_similar(last_layer_cell, cell)
                                 if match_result['distance'] < 50:
                                     wait_dict[last_layer_cell] = match_result['IoU'] + 10 /(match_result['distance'] + 1e-5)
