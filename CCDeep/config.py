@@ -18,11 +18,15 @@ TIMES = 20  # Image magnification
 
 SEG_DEV = True  # 是否启用开发版本的segment model
 
-GAP_WINDOW_LEN = 20
+GAP_WINDOW_LEN = 20  # track中断的最大帧数,设置为None则表示可以无限中断且该track不会终止参与匹配
+
+CANDIDATE_RANGE_COEFFICIENT = 1  # 有效的候选匹配细胞范围系数，1表示有效范围为该细胞bounding box宽高分别向四周扩大一倍。个如果细胞移动速度较快，或者拍摄间隔时间较长，可以考虑增大该值。
+
+USING_IMAGE_FOR_TRACKING = False  # 是否提取原始图像信息参与tracking。注意：如果选择开启此功能，会大大延长tracking的runtime，精度提升不一定与产生的开销对等，请酌情使用。
 
 AUGMENTATION_IN_TRAINING = False  # 是否在训练图像分类过程中启用数据增强
 
-RAW_INPUT_IMAGE_SIZE = (2048, 2048)  # predict image size
+RAW_INPUT_IMAGE_SIZE = (2048, 2048)  # predict image size,通常，这个参数并不重要，他只是在输出的JSON文件中提前记录了图像的宽高，实际宽高会依据输入的图像本本身来获取
 
 # some training parameters
 EPOCHS = 100
@@ -86,7 +90,6 @@ segment_model_saved_dir_20x = './models/segment/20x/'
 train_dataset_20x = './CCDeep_train_data/segment/train/images/'
 train_label_20x = './CCDeep_train_data/segment/train/masks/'
 
-# segment_dev_model_name = 'PCNA_model_20230511_400epoch-custom'
 segment_dev_model_name = 'segment_dev'
 segment_dev_model_basedir = './models/segment_dev/'
 

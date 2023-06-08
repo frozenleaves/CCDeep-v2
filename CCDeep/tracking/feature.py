@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from tifffile import tifffile
 
+from CCDeep import config
 from CCDeep.tracking.base import Cell, NoneTypeFileter, Vector
 
 
@@ -105,7 +106,7 @@ class FeatureExtractor(object):
             annotation: dict 细胞的轮廓和周期等注释信息, json文件中的regions
         """
         if not self._init_flag:
-            self.__using_image = False
+            # config.USING_IMAGE_FOR_TRACKING = config.USING_IMAGE_FOR_TRACKING
             self.frame_id = None
             if (image_mcy is not None) and  (image_dic is not None):
                 if type(image_mcy) != np.uint8:
@@ -116,7 +117,9 @@ class FeatureExtractor(object):
                     self.dic = self.convert_dtype(image_dic)
                 else:
                     self.dic = image_dic
-                self.__using_image = True
+            else:
+                if config.USING_IMAGE_FOR_TRACKING is True: # config 配置using image，但是参数不合规，关闭此选项
+                    config.USING_IMAGE_FOR_TRACKING = False
             self.annotation = annotation
             # self.image_shape = self.mcy.shape
             self.frame_index = kwargs.get('frame_index')
@@ -247,7 +250,7 @@ class FeatureExtractor(object):
         :param cell:
         :return:
         """
-        if self.__using_image:
+        if config.USING_IMAGE_FOR_TRACKING:
             dic = self.get_roi_from_coord(cell, self.dic)
             mcy = self.get_roi_from_coord(cell, self.mcy)
             return dic, mcy
@@ -260,7 +263,7 @@ class FeatureExtractor(object):
         :param cell: Cell对象
         :return: 包含图像信息的Cell对象
         """
-        if self.__using_image:
+        if config.USING_IMAGE_FOR_TRACKING:
             dic, mcy = self.get_cell_image(cell)
             cell.dic = dic
             cell.mcy = mcy
@@ -271,7 +274,7 @@ class FeatureExtractor(object):
     @lru_cache(maxsize=None)
     def _cells(self):
         cells = self.get_cell_list()
-        if self.__using_image:
+        if config.USING_IMAGE_FOR_TRACKING:
             for cell in cells:
                 self.set_cell_image(cell)
         return cells
@@ -281,7 +284,7 @@ class FeatureExtractor(object):
         :param cell: Cell对象
         :return: Feature对象
         """
-        if self.__using_image:
+        if config.USING_IMAGE_FOR_TRACKING:
             mcy_intensity = np.mean(cell.mcy)
             mcy_variance = np.std(cell.mcy) ** 2
             dic_intensity = np.mean(cell.dic)

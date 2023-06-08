@@ -455,7 +455,7 @@ class Match(object):
 
 
 class Matcher(object):
-    """拿子细胞找母细胞，根据下一帧匹配上一帧"""
+    """选定当前帧细胞，匹配前一帧最佳选项，根据下一帧匹配上一帧"""
 
     def __init__(self):
         self.matcher = Match()
@@ -1147,13 +1147,20 @@ class Tracker(object):
                                 handle_flag = True
                     if (not handle_flag):
                         for last_layer_cell in last_layer_cells:
-                            if 1 < current_frame - last_layer_cell.frame < config.GAP_WINDOW_LEN:
-                            # if current_frame > last_layer_cell.frame:
-                                match_result = self.matcher.match_similar(last_layer_cell, cell)
-                                if match_result['distance'] < 50:
-                                    wait_dict[last_layer_cell] = match_result['IoU'] + 10 /(match_result['distance'] + 1e-5)
-                                    wait_tree_map[last_layer_cell] = tree
-                                    handle_flag = True
+                            if config.GAP_WINDOW_LEN:
+                                if 1 < current_frame - last_layer_cell.frame < config.GAP_WINDOW_LEN:
+                                    match_result = self.matcher.match_similar(last_layer_cell, cell)
+                                    if match_result['distance'] < 50:
+                                        wait_dict[last_layer_cell] = match_result['IoU'] + 10 /(match_result['distance'] + 1e-5)
+                                        wait_tree_map[last_layer_cell] = tree
+                                        handle_flag = True
+                            else:
+                                if current_frame > last_layer_cell.frame:
+                                    match_result = self.matcher.match_similar(last_layer_cell, cell)
+                                    if match_result['distance'] < 50:
+                                        wait_dict[last_layer_cell] = match_result['IoU'] + 10 /(match_result['distance'] + 1e-5)
+                                        wait_tree_map[last_layer_cell] = tree
+                                        handle_flag = True
                 if wait_dict:
                     matched_cell = max(wait_dict, key=wait_dict.get)
                     tree = wait_tree_map[matched_cell]

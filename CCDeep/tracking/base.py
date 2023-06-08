@@ -13,6 +13,8 @@ from functools import lru_cache
 from numba import jit
 from matplotlib import pyplot as plt
 
+from CCDeep import config
+
 
 def convert_dtype(__image: np.ndarray) -> np.ndarray:
     """将图像从uint16转化为uint8"""
@@ -494,7 +496,7 @@ class Cell(object):
     @lru_cache(maxsize=None)
     def available_range(self):
         """指定前后两帧的可匹配范围，默认为细胞横纵坐标的两倍"""
-        mult = 1
+        mult = config.CANDIDATE_RANGE_COEFFICIENT
 
         x_len = self.bbox[3] - self.bbox[2]
         y_len = self.bbox[1] - self.bbox[0]
